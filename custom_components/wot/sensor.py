@@ -5,7 +5,7 @@ from homeassistant.helpers.entity import Entity
 _LOGGER = logging.getLogger(__name__)
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up the WOT Reserves sensor."""
+    """Set up the WOT sensor."""
     name = config.get("name", "WOT Reserves")
     api_key = config.get("api_key")
     account_id = config.get("account_id")
@@ -14,10 +14,10 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         _LOGGER.error("API key and account ID must be provided in configuration.yaml")
         return
 
-    add_entities([WOTReservesSensor(name, api_key, account_id)], True)
+    add_entities([WOTSensor(name, api_key, account_id)], True)
 
 
-class WOTReservesSensor(Entity):
+class WOTSensor(Entity):
     def __init__(self, name, api_key, account_id):
         self._name = name
         self._api_key = api_key

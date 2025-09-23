@@ -13,7 +13,7 @@ This integration allows you to track your **World of Tanks reserves** in Home As
 Add to your `configuration.yaml`:
 
 ```yaml
-wot_reserves:
+wot:
   name: "My WOT Reserves"
   api_key: "ВАШ_API_KEY"
   account_id: "ВАШ_ACCOUNT_ID"
