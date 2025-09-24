@@ -9,18 +9,19 @@ from homeassistant.helpers.event import async_track_time_interval
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-
 SCAN_INTERVAL = timedelta(minutes=1)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up WOT sensors from a config entry."""
-    application_id = entry.data["application_id"]
-    access_token = entry.data["access_token"]
+    """Set up WOT sensors from config entry."""
+    config_data = entry.data
+    application_id = config_data["application_id"]
+    access_token = config_data["access_token"]
 
     main_sensor = WOTSensor("WOT Reserves", application_id, access_token, hass, async_add_entities)
     async_add_entities([main_sensor], True)
 
+    # Планове оновлення
     async_track_time_interval(hass, main_sensor.async_update, SCAN_INTERVAL)
 
 
@@ -50,7 +51,7 @@ class WOTSensor(Entity):
         return self._attributes
 
     async def async_update(self, now=None):
-        """Asynchronously fetch data from WOT API."""
+        """Асинхронне отримання даних з WOT API."""
         url = "https://api.worldoftanks.eu/wot/stronghold/clanreserves/"
         params = {"application_id": self._application_id, "access_token": self._access_token}
 
@@ -70,7 +71,7 @@ class WOTSensor(Entity):
             self._state = sum(len(r.get("in_stock", [])) for r in reserves)
             self._attributes = {r["name"]: r for r in reserves}
 
-            # Динамічне створення дочірніх сенсорів
+            # Створюємо дочірні сенсори для кожного елемента in_stock
             new_sensors = []
             for r in reserves:
                 reserve_name = r["name"]
@@ -93,7 +94,7 @@ class WOTSensor(Entity):
 
 
 class WOTChildSensor(Entity):
-    """Дочірній сенсор для окремого екземпляру резерву."""
+    """Дочірній сенсор для окремого резерву."""
 
     def __init__(self, name, data):
         self._name = f"WOT {name}"
@@ -110,9 +111,4 @@ class WOTChildSensor(Entity):
         return self._state
 
     @property
-    def extra_state_attributes(self):
-        return self._data
-
-    def update_state(self, data):
-        self._data = data
-        self._state = data.get("amount", 0)
+    def extra_state_attributes(self)
