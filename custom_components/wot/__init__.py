@@ -3,5 +3,5 @@ from homeassistant.core import HomeAssistant
 DOMAIN = "wot"
 
 async def async_setup(hass: HomeAssistant, config: dict):
-    """Set up the WOT integration."""
+    """Set up the WOT integration (no YAML)."""
     return True

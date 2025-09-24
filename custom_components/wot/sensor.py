@@ -6,22 +6,19 @@ import async_timeout
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_time_interval
 
+from .const import DOMAIN
+
 _LOGGER = logging.getLogger(__name__)
 
 SCAN_INTERVAL = timedelta(minutes=1)
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Set up the WOT sensor asynchronously."""
-    name = config.get("name", "WOT Reserves")
-    api_key = config.get("api_key")
-    access_token = config.get("access_token")
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up WOT sensors from a config entry."""
+    application_id = entry.data["application_id"]
+    access_token = entry.data["access_token"]
 
-    if not api_key or not access_token:
-        _LOGGER.error("API key and access token must be provided in configuration.yaml")
-        return
-
-    main_sensor = WOTSensor(name, api_key, access_token, hass, async_add_entities)
+    main_sensor = WOTSensor("WOT Reserves", application_id, access_token, hass, async_add_entities)
     async_add_entities([main_sensor], True)
 
     async_track_time_interval(hass, main_sensor.async_update, SCAN_INTERVAL)
@@ -30,9 +27,9 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class WOTSensor(Entity):
     """Головний сенсор для кількості резервів."""
 
-    def __init__(self, name, api_key, access_token, hass, async_add_entities):
+    def __init__(self, name, application_id, access_token, hass, async_add_entities):
         self._name = name
-        self._api_key = api_key
+        self._application_id = application_id
         self._access_token = access_token
         self._state = None
         self._attributes = {}
@@ -55,7 +52,7 @@ class WOTSensor(Entity):
     async def async_update(self, now=None):
         """Asynchronously fetch data from WOT API."""
         url = "https://api.worldoftanks.eu/wot/stronghold/clanreserves/"
-        params = {"application_id": self._api_key, "access_token": self._access_token}
+        params = {"application_id": self._application_id, "access_token": self._access_token}
 
         try:
             async with aiohttp.ClientSession() as session:
@@ -73,7 +70,7 @@ class WOTSensor(Entity):
             self._state = sum(len(r.get("in_stock", [])) for r in reserves)
             self._attributes = {r["name"]: r for r in reserves}
 
-            # Динамічне створення дочірніх сенсорів для кожного резерву
+            # Динамічне створення дочірніх сенсорів
             new_sensors = []
             for r in reserves:
                 reserve_name = r["name"]
@@ -118,5 +115,4 @@ class WOTChildSensor(Entity):
 
     def update_state(self, data):
         self._data = data
-        # Для стану беремо кількість в резерві
         self._state = data.get("amount", 0)
