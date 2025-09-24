@@ -1,7 +1,7 @@
 {
   "domain": "wot",
   "name": "World of Tanks Reserves",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "documentation": "https://github.com/yourusername/wot",
   "requirements": [],
   "dependencies": [],
