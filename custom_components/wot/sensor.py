@@ -13,7 +13,7 @@ SCAN_INTERVAL = timedelta(minutes=1)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Створюємо сенсори після додавання інтеграції через UI."""
+    """Створюємо сенсори через UI-настройку."""
     config = entry.data
     application_id = config["application_id"]
     access_token = config["access_token"]
@@ -21,11 +21,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = WOTDataUpdateCoordinator(hass, application_id, access_token)
     await coordinator.async_refresh()
 
+    sensors = []
+
     # Головний сенсор
     main_sensor = WOTMainSensor(coordinator, "WOT Reserves")
-    sensors = [main_sensor]
+    sensors.append(main_sensor)
 
-    # Дочірні сенсори для кожного резерву
+    # Дочірні сенсори
     for reserve in coordinator.data:
         name = reserve["name"]
         for idx, stock in enumerate(reserve.get("in_stock", []), start=1):
@@ -35,7 +37,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 class WOTDataUpdateCoordinator(DataUpdateCoordinator):
-    """Координатор для асинхронного отримання даних WOT."""
+    """Асинхронний координатор для WOT API."""
 
     def __init__(self, hass, application_id, access_token):
         self.application_id = application_id
@@ -56,8 +58,10 @@ class WOTDataUpdateCoordinator(DataUpdateCoordinator):
                 with async_timeout.timeout(10):
                     async with session.get(url, params=params) as resp:
                         data = await resp.json()
+
             if data.get("status") != "ok" or "data" not in data:
                 raise UpdateFailed("Unexpected WOT API response")
+
             return data["data"]
 
         except Exception as e:
@@ -65,7 +69,7 @@ class WOTDataUpdateCoordinator(DataUpdateCoordinator):
 
 
 class WOTMainSensor(Entity):
-    """Головний сенсор: загальна кількість резервів."""
+    """Головний сенсор: показує суму всіх резервів."""
 
     def __init__(self, coordinator, name):
         self.coordinator = coordinator
@@ -98,7 +102,7 @@ class WOTChildSensor(Entity):
     def __init__(self, coordinator, name, stock):
         self.coordinator = coordinator
         self._name = f"WOT {name}"
-        self.stock_index = stock
+        self.stock_data = stock
         self._state = stock.get("amount", 0)
         self._attributes = stock
 
@@ -116,9 +120,9 @@ class WOTChildSensor(Entity):
 
     async def async_update(self):
         await self.coordinator.async_request_refresh()
-        # Оновлюємо дані по конкретному резерву
+        # оновлюємо власний стан по stock_data
         for reserve in self.coordinator.data:
             for stock in reserve.get("in_stock", []):
-                if stock == self._attributes:
+                if stock == self.stock_data:
                     self._state = stock.get("amount", 0)
                     self._attributes = stock
