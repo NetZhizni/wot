@@ -8,7 +8,7 @@ DATA_SCHEMA = vol.Schema({
 })
 
 class WOTConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle WOT config flow."""
+    """Config flow для WOT."""
 
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
